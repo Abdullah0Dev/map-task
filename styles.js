@@ -33,21 +33,20 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   modalContainer: {
-    flex: 1,
+    height: '100%',
+    width: '100%',
     justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContainerDark: {
-    flex: 1,
+    height: '100%',
+    width: '100%',
     justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.5)',
   },
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
     color: 'white',
   },
   listItem: {
@@ -178,6 +177,18 @@ const styles = StyleSheet.create({
   },
   namingButtons: {
     flexDirection: 'row',
+  },
+  marker: {
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    padding: 5,
+    borderRadius: 5,
+    borderColor: '#ccc',
+    borderWidth: 1,
+  },
+  text: {
+    color: '#000',
+    fontSize: 13,
+    textAlign: 'center',
   },
 });
 

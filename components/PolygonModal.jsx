@@ -8,11 +8,13 @@ const PolygonModal = ({ modalVisible, setModalVisible, polygons, polygonNames, s
   const isDarkMode = colorScheme === 'dark';
 
   return (
-    <Modal visible={modalVisible} transparent={true} animationType="slide">
+    <>
       <View style={isDarkMode ? styles.modalContainerDark : styles.modalContainer}>
-        <Text style={styles.modalTitle}>Shapes</Text>
-        <Pressable onPress={() => { setDrawing(true); setModalVisible(false); }}>
-          <Text style={styles.buttonText}>Create Area</Text>
+
+        <Pressable onPress={() => { setDrawing(true); }}>
+          <Text
+            className='text-white text-center mb-3 text-xl mt-3 rounded-xl  bg-black py-4 mx-3'
+          >Create Area</Text>
         </Pressable>
         <FlatList
           data={polygons}
@@ -26,11 +28,8 @@ const PolygonModal = ({ modalVisible, setModalVisible, polygons, polygonNames, s
           )}
           keyExtractor={(item, index) => index.toString()}
         />
-        <Pressable onPress={() => setModalVisible(false)}>
-          <Text style={styles.buttonText}>Close</Text>
-        </Pressable>
       </View>
-    </Modal>
+    </>
   );
 };
 

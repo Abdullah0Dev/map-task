@@ -1,108 +1,25 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, Button, Modal, StyleSheet, TouchableOpacity, FlatList, TextInput, Pressable, Alert, useColorScheme } from 'react-native';
-import MapView, { Polygon, Marker } from 'react-native-maps';
+import React, { useState, useEffect } from 'react';
+import { View, TouchableOpacity, Text, Modal, StyleSheet, FlatList } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import * as turf from '@turf/turf';
-import { NamePolygonModal, PolygonModal } from '../components';
-import styles from '../styles';
- 
-const HomeScreen = () => {
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
-  
+import PolygonModal from '../components/PolygonModal';
+
+const HomeScreen = ({ navigation, route }) => {
+  const { polygons: routePolygons, polygonNames: routePolygonNames } = route.params || { polygons: [], polygonNames: [] };
+
   const [modalVisible, setModalVisible] = useState(false);
-  const [drawing, setDrawing] = useState(false);
-  const [polygons, setPolygons] = useState([]);
-  const [currentPolygon, setCurrentPolygon] = useState([]);
-  const [nameModalVisible, setNameModalVisible] = useState(false);
-  const [currentName, setCurrentName] = useState('');
-  const [polygonNames, setPolygonNames] = useState([]);
-  const [selectedPolygon, setSelectedPolygon] = useState(null);
-  const mapRef = useRef(null);
+  const [polygons, setPolygons] = useState(routePolygons);
+  const [polygonNames, setPolygonNames] = useState(routePolygonNames);
 
-  const handleMapPress = (e) => {
-    if (!drawing) return;
-    setCurrentPolygon([...currentPolygon, e.nativeEvent.coordinate]);
-  };
-
-  
-
-  const handleFinishPolygon = () => {
-    if (currentPolygon.length < 3) {
-      Alert.alert('Error', 'You must draw at least 3 points to create a polygon.');
-      return;
+  useEffect(() => {
+    if (route.params?.polygons && route.params?.polygonNames) {
+      setPolygons(route.params.polygons);
+      setPolygonNames(route.params.polygonNames);
     }
-    setNameModalVisible(true);
-  };
+  }, [route.params?.polygons, route.params?.polygonNames]);
 
-  const handleSavePolygon = () => {
-    setPolygons([...polygons, currentPolygon]);
-    setPolygonNames([...polygonNames, currentName]);
-    setCurrentPolygon([]);
-    setCurrentName('');
-    setDrawing(false);
-    setNameModalVisible(false);
-  };
-
-  const handleCancelDrawing = () => {
-    setCurrentPolygon([]);
-    setDrawing(false);
-  };
-
-  const handleCancelNaming = () => {
-    setCurrentPolygon([]);
-    setCurrentName('');
-    setNameModalVisible(false);
-    setDrawing(false);
-  };
-
-  const calculatePolygonCenter = (coordinates) => {
-    const latitudes = coordinates.map(coord => coord.latitude);
-    const longitudes = coordinates.map(coord => coord.longitude);
-    const minLat = Math.min(...latitudes);
-    const maxLat = Math.max(...latitudes);
-    const minLng = Math.min(...longitudes);
-    const maxLng = Math.max(...longitudes);
-    const midLat = (minLat + maxLat) / 2;
-    const midLng = (minLng + maxLng) / 2;
-    return {
-      latitude: isNaN(midLat) ? 0 : midLat,
-      longitude: isNaN(midLng) ? 0 : midLng
-    };
-  };
-
-  const calculateArea = (polygon) => {
-    const coordinates = polygon.map(coord => [coord.longitude, coord.latitude]);
-    coordinates.push(coordinates[0]);
-    const turfPolygon = turf.polygon([coordinates]);
-    const areaInSquareMeters = turf.area(turfPolygon);
-    const areaInSquareFeet = areaInSquareMeters * 10.7639;
-    return areaInSquareFeet.toFixed(2);
-  };
   const handleSelectPolygon = (index) => {
-    const polygon = polygons[index];
-    if (mapRef.current) {
-      const coordinates = polygon;
-      const latitudes = coordinates.map(coord => coord.latitude);
-      const longitudes = coordinates.map(coord => coord.longitude);
-      const minLat = Math.min(...latitudes);
-      const maxLat = Math.max(...latitudes);
-      const minLng = Math.min(...longitudes);
-      const maxLng = Math.max(...longitudes);
-      const midLat = (minLat + maxLat) / 2;
-      const midLng = (minLng + maxLng) / 2;
-      const latitudeDelta = maxLat - minLat + 0.01;
-      const longitudeDelta = maxLng - minLng + 0.01;
-
-      mapRef.current.animateToRegion({
-        latitude: midLat,
-        longitude: midLng,
-        latitudeDelta,
-        longitudeDelta,
-      });
-    }
-    setSelectedPolygon(index);
-    setModalVisible(false);
+    navigation.navigate('Map', { polygons, polygonNames, selectedPolygonIndex: index });
+    setModalVisible(true);
   };
 
   const handleDeletePolygon = (index) => {
@@ -110,73 +27,52 @@ const HomeScreen = () => {
     const newPolygonNames = polygonNames.filter((_, i) => i !== index);
     setPolygons(newPolygons);
     setPolygonNames(newPolygonNames);
-    setSelectedPolygon(null);
   };
 
+  const calculateArea = (polygon) => {
+    // Your calculateArea function here
+  };
 
-  return ( 
-    <View style={isDarkMode ? styles.containerDark : styles.container}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        onPress={handleMapPress}
-        initialRegion={{
-          latitude: 37.78825,
-          longitude: -122.4324,
-          latitudeDelta: 0.015,
-          longitudeDelta: 0.0121,
-        }}
-      >
-        {polygons.map((polygon, index) => (
-          <React.Fragment key={index}>
-            <Polygon
-              coordinates={polygon}
-              strokeColor={selectedPolygon === index ? "#FFD700" : "#F00"}
-              fillColor={selectedPolygon === index ? "rgba(255,215,0,0.5)" : "rgba(255,0,0,0.5)"}
-            />
-            <Marker
-              coordinate={calculatePolygonCenter(polygon)}
-              title={polygonNames[index]}
-            />
-          </React.Fragment>
-        ))}
-        {currentPolygon.length > 0 && (
-          <Polygon coordinates={currentPolygon} strokeColor="#00F" fillColor="rgba(0,0,255,0.3)" />
+  const handleCreatePolygon = () => {
+    navigation.navigate('Map', { polygons, polygonNames, drawing: true });
+  };
+
+  return (
+    <View
+    //  style={styles.container}
+    className='h-full'
+    
+    > 
+      <FlatList
+        data={polygonNames}
+        renderItem={({ item, index }) => (
+          <View>
+            <Text>{item}</Text>
+            <TouchableOpacity onPress={() => handleDeletePolygon(index)}>
+              <Text>Delete</Text>
+            </TouchableOpacity>
+          </View>
         )}
-      </MapView>
-      <TouchableOpacity style={isDarkMode ? styles.iconDark : styles.icon} onPress={() => setModalVisible(true)}>
-        <Icon name="list" size={30} color={isDarkMode ? "white" : "black"} />
-      </TouchableOpacity>
+        keyExtractor={(item, index) => index.toString()}
+      /> 
       <PolygonModal
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
         polygons={polygons}
         polygonNames={polygonNames}
-        setDrawing={setDrawing}
+        setDrawing={() => navigation.navigate('Map', { polygons, polygonNames, drawing: true })}
         calculateArea={calculateArea}
         handleDeletePolygon={handleDeletePolygon}
         handleSelectPolygon={handleSelectPolygon}
-      />
-      {drawing && (
-        <View style={styles.drawingButtons}>
-          <TouchableOpacity onPress={handleCancelDrawing}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleFinishPolygon}>
-            <Text style={styles.finishBtn}>Finished</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      <NamePolygonModal
-        nameModalVisible={nameModalVisible}
-        setNameModalVisible={setNameModalVisible}
-        currentName={currentName}
-        setCurrentName={setCurrentName}
-        handleSavePolygon={handleSavePolygon}
-        handleCancelNaming={handleCancelNaming}
       />
     </View>
   );
 };
 
 export default HomeScreen;
+
+const styles = StyleSheet.create({
+  container: { flex: 1,  },
+  // createButton: { position: 'absolute', bottom: 30, padding: 10, backgroundColor: 'blue' },
+  // icon: { position: 'absolute', top: 40, right: 10 },
+});
